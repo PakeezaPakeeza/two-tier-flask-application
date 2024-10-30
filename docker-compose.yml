@@ -6,20 +6,24 @@ services:
     container_name: mysql
     environment:
       MYSQL_ROOT_PASSWORD: root
-      MYSQL_DATABASE: devops
+      MYSQL_DATABASE: mydb
       MYSQL_USER: admin
       MYSQL_PASSWORD: admin
     volumes:
-      - ./mysql-data:/var/lib/mysql
-      - ./message.sql:/docker-entrypoint-initdb.d/message.sql  
+      - mysql-data:/var/lib/mysql
+    ports:
+      - 3306:3306  
     networks:
       - twotier
+    restart: always
     healthcheck:
-      test: ["CMD", "mysqladmin", "ping", "-h", "localhost", "-uroot", "-proot"]
+      #ye container tab tak up nahi ho ga jab tak isk health check satisfied nahi ho jaty
+      test: ["CMD", "mysqladmin", "ping", "-h", "localhost", "-uroot", "-padmin"]
       interval: 10s
-      timeout: 5s
-      retries: 5
+      timeout: 20s
+      retries: 10
       start_period: 60s
+    
 
   flask-app:
     build:
@@ -31,18 +35,24 @@ services:
       MYSQL_HOST: mysql
       MYSQL_USER: root
       MYSQL_PASSWORD: root
-      MYSQL_DB: devops
-    depends_on:
-      - mysql
+      MYSQL_DB: mydb
     networks:
       - twotier
-    restart: always
+    volumes:
+      - flask-data:/app
+    depends_on:
+      - mysql
+    
     healthcheck:
       test: ["CMD-SHELL", "curl -f http://localhost:5000/health || exit 1"]
       interval: 10s
-      timeout: 5s
-      retries: 5
-      start_period: 30s
-
+      timeout: 20s
+      retries: 10
+      start_period: 60s
+    restart: always
 networks:
   twotier:
+volumes:
+  mysql-data:
+  flask-data:
+
